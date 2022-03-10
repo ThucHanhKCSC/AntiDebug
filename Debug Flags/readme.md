@@ -286,12 +286,116 @@ bool Check()
 Đối với IsDebuggerPresent (): Đặt cờ BeingDebugged của Process Environment Block (PEB) thành 0
 Đối với CheckRemoteDebuggerPresent () và NtQueryInformationProcess ():
   - Khi CheckRemoteDebuggerPresent () gọi NtQueryInformationProcess (), cách duy nhất là nối NtQueryInformationProcess () và đặt các giá trị sau trong bộ đệm trả về:
-           - 0 (hoặc bất kỳ giá trị nào ngoại trừ -1) trong trường hợp truy vấn ProcessDebugPort.
-           - Giá trị khác 0 trong trường hợp truy vấn ProcessDebugFlags.
-           - 0 trong trường hợp truy vấn ProcessDebugObjectHandle.
+  
+      - 0 (hoặc bất kỳ giá trị nào ngoại trừ -1) trong trường hợp truy vấn ProcessDebugPort.
+          
+      - Giá trị khác 0 trong trường hợp truy vấn ProcessDebugFlags.
+           
+       - 0 trong trường hợp truy vấn ProcessDebugObjectHandle.
   - Cách duy nhất để giảm thiểu những kiểm tra này với các hàm RtlQueryProcessHeapInformation (), RtlQueryProcessDebugInformation () và NtQuerySystemInformation () là nối chúng và sửa đổi các giá trị trả về:
-           - RTL_PROCESS_HEAPS :: HeapInformation :: Heaps [0] :: Gắn cờ cho HEAP_GROWABLE cho
+ 
+       - RTL_PROCESS_HEAPS :: HeapInformation :: Heaps [0] :: Gắn cờ cho HEAP_GROWABLE cho
 RtlQueryProcessHeapInformation () và RtlQueryProcessDebugInformation ().
-           - SYSTEM_KERNEL_DEBUGGER_INFORMATION :: DebuggerEnabled thành 0 và SYSTEM_KERNEL_DEBUGGER_INFORMATION :: DebuggerNotPresent thành 1 cho hàm NtQuerySystemInformation () trong trường hợp truy vấn SystemKernelDebuggerInformation.
 
+       - SYSTEM_KERNEL_DEBUGGER_INFORMATION :: DebuggerEnabled thành 0 và SYSTEM_KERNEL_DEBUGGER_INFORMATION :: DebuggerNotPresent thành 1 cho hàm NtQuerySystemInformation () trong trường hợp truy vấn SystemKernelDebuggerInformation.
+       
+       
+# 2. <ins>Kiểm tra thủ công</ins>
+
+Cách tiếp cận này được sử dụng để phát hiện cờ debug trong cấu trúc hệ thống. có thể kiểm tra bộ nhớ của tiến trình thủ công mà không cần đến các hàm API
+
+# 2.1. Cờ PEB!BeingDebugged
+phương pháp này là một cách khác để kiểm tra cờ ```beingDebugged``` của PEB mà không cần gọi tới hàm ```IsDebuggerPresent()```
+
+asm 32 bit:
+```nasm
+mov eax, fs:[30h]
+cmp byte ptr [eax+2], 0              ; nếu trả về != 0 => đang bị debug
+jne being_debugged
+```
+
+asm 64 bit:
+```nasm
+mov rax, gs:[60h]
+cmp byte ptr [rax+2], 0
+jne being_debugged
+```
+
+WOW64:
+```nasm
+mov eax, fs:[30h]
+cmp byte ptr [eax+1002h], 0
+```
+
+C/C++:
+```C
+#ifndef _WIN64
+PPEB pPeb = (PPEB)__readfsdword(0x30);
+#else
+PPEB pPeb = (PPEB)__readgsqword(0x60);
+#endif // _WIN64
+ 
+if (pPeb->BeingDebugged)
+    goto being_debugged;
+```
+
+# 2.2. NtGlobalFlag
+
+Trường NtGlobalFlag của khối PEB (offset 0x68 trên 32bit và 0xBC trên 64 bit) mặc định là 0. Việc bị attach bởi 1 trình debugger thì giá trị NtGlobalFlag không thay đổi. Nhưng nếu tiến trình đó được tạo vởi Debugger thì các cờ sau sẽ được set: 
+
+- FLG_HEAP_ENABLE_TAIL_CHECK (0x10)
+
+- FLG_HEAP_ENABLE_FREE_CHECK (0x20)
+
+- FLG_HEAP_VALIDATE_PARAMETERS (0x40)
+
+Sự hiện diện của trình gỡ lỗi có thể được phát hiện bằng cách kiểm tra sự kết hợp của các cờ đó.
+
+asm 32 bit:
+```nasm
+mov eax, fs:[30h]
+mov al, [eax+68h]        ; 3 cờ này đươc set nếu debug tạo tiến trình, kiểm tra tổng với 0x70, nếu bằng thì nghĩa là tiến trình vừa đươc debugger tạo 
+and al, 70h
+cmp al, 70h
+jz  being_debugged
+```
+
+asm 64 bit:
+```nasm
+mov rax, gs:[60h]
+mov al, [rax+BCh]
+and al, 70h
+cmp al, 70h
+jz  being_debugged
+```
+
+WOW64:
+```nasm
+mov eax, fs:[30h]
+mov al, [eax+10BCh]
+and al, 70h
+cmp al, 70h
+jz  being_debugged
+```
+
+C/C++:
+```C
+#define FLG_HEAP_ENABLE_TAIL_CHECK   0x10
+#define FLG_HEAP_ENABLE_FREE_CHECK   0x20
+#define FLG_HEAP_VALIDATE_PARAMETERS 0x40
+#define NT_GLOBAL_FLAG_DEBUGGED (FLG_HEAP_ENABLE_TAIL_CHECK | FLG_HEAP_ENABLE_FREE_CHECK | FLG_HEAP_VALIDATE_PARAMETERS)
+
+#ifndef _WIN64
+PPEB pPeb = (PPEB)__readfsdword(0x30);
+DWORD dwNtGlobalFlag = *(PDWORD)((PBYTE)pPeb + 0x68);
+#else
+PPEB pPeb = (PPEB)__readgsqword(0x60);
+DWORD dwNtGlobalFlag = *(PDWORD)((PBYTE)pPeb + 0xBC);
+#endif // _WIN64
+ 
+if (dwNtGlobalFlag & NT_GLOBAL_FLAG_DEBUGGED)
+    goto being_debugged;
+```
+
+# 2.3. Heap Flags
 
