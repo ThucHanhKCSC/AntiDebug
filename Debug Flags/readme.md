@@ -281,3 +281,17 @@ bool Check()
         : false;
 }
 ```
+
+# Cách khắc phục:
+Đối với IsDebuggerPresent (): Đặt cờ BeingDebugged của Process Environment Block (PEB) thành 0
+Đối với CheckRemoteDebuggerPresent () và NtQueryInformationProcess ():
+  - Khi CheckRemoteDebuggerPresent () gọi NtQueryInformationProcess (), cách duy nhất là nối NtQueryInformationProcess () và đặt các giá trị sau trong bộ đệm trả về:
+           - 0 (hoặc bất kỳ giá trị nào ngoại trừ -1) trong trường hợp truy vấn ProcessDebugPort.
+           - Giá trị khác 0 trong trường hợp truy vấn ProcessDebugFlags.
+           - 0 trong trường hợp truy vấn ProcessDebugObjectHandle.
+  - Cách duy nhất để giảm thiểu những kiểm tra này với các hàm RtlQueryProcessHeapInformation (), RtlQueryProcessDebugInformation () và NtQuerySystemInformation () là nối chúng và sửa đổi các giá trị trả về:
+           - RTL_PROCESS_HEAPS :: HeapInformation :: Heaps [0] :: Gắn cờ cho HEAP_GROWABLE cho
+RtlQueryProcessHeapInformation () và RtlQueryProcessDebugInformation ().
+           - SYSTEM_KERNEL_DEBUGGER_INFORMATION :: DebuggerEnabled thành 0 và SYSTEM_KERNEL_DEBUGGER_INFORMATION :: DebuggerNotPresent thành 1 cho hàm NtQuerySystemInformation () trong trường hợp truy vấn SystemKernelDebuggerInformation.
+
+
