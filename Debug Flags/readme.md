@@ -398,4 +398,151 @@ if (dwNtGlobalFlag & NT_GLOBAL_FLAG_DEBUGGED)
 ```
 
 # 2.3. Heap Flags
+Heap chứa hai trường bị ảnh hưởng bởi sự hiện diện của debugger. Chính xác cách chúng bị ảnh hưởng phụ thuộc vào phiên bản Windows. Các trường này là Flags và ForceFlags.
+
+Khi có Debugger, trường cờ sẽ là sự kết hợp của các trường trên WinNY, Win2000 và WinXP 32bit:
+
+- HEAP_GROWABLE (2)
+ 
+- HEAP_TAIL_CHECKING_ENABLED (0x20)
+
+- HEAP_FREE_CHECKING_ENABLED (0x40)
+
+- HEAP_SKIP_VALIDATION_CHECKS (0x10000000)
+
+- HEAP_VALIDATE_PARAMETERS_ENABLED (0x40000000)
+
+Với WinXP 64 bit (có cái này à? @@) hay WinVista hoặc cao hơn, nếu có debugger, trường cờ sẽ được đặt bằng sự kết hợp của các cờ sau 
+
+- HEAP_GROWABLE (2)
+
+- HEAP_TAIL_CHECKING_ENABLED (0x20)
+
+- HEAP_FREE_CHECKING_ENABLED (0x40)
+
+- HEAP_VALIDATE_PARAMETERS_ENABLED (0x40000000)
+
+Khi có Debugger, trường ForceFlags sẽ gồm:
+
+- HEAP_TAIL_CHECKING_ENABLED (0x20)
+
+- HEAP_FREE_CHECKING_ENABLED (0x40)
+
+- HEAP_VALIDATE_PARAMETERS_ENABLED (0x40000000)
+
+Code C:
+```C
+bool Check()
+{
+#ifndef _WIN64
+    PPEB pPeb = (PPEB)__readfsdword(0x30);
+    PVOID pHeapBase = !m_bIsWow64
+        ? (PVOID)(*(PDWORD_PTR)((PBYTE)pPeb + 0x18))
+        : (PVOID)(*(PDWORD_PTR)((PBYTE)pPeb + 0x1030));
+    DWORD dwHeapFlagsOffset = IsWindowsVistaOrGreater()
+        ? 0x40
+        : 0x0C;
+    DWORD dwHeapForceFlagsOffset = IsWindowsVistaOrGreater()
+        ? 0x44 
+        : 0x10;
+#else
+    PPEB pPeb = (PPEB)__readgsqword(0x60);
+    PVOID pHeapBase = (PVOID)(*(PDWORD_PTR)((PBYTE)pPeb + 0x30));
+    DWORD dwHeapFlagsOffset = IsWindowsVistaOrGreater()
+        ? 0x70 
+        : 0x14;
+    DWORD dwHeapForceFlagsOffset = IsWindowsVistaOrGreater()
+        ? 0x74 
+        : 0x18;
+#endif // _WIN64
+
+    PDWORD pdwHeapFlags = (PDWORD)((PBYTE)pHeapBase + dwHeapFlagsOffset);
+    PDWORD pdwHeapForceFlags = (PDWORD)((PBYTE)pHeapBase + dwHeapForceFlagsOffset);
+    return (*pdwHeapFlags & ~HEAP_GROWABLE) || (*pdwHeapForceFlags != 0);
+```
+
+# 2.3. Bảo vệ Heap
+
+Nếu cờ HEAP_TAIL_CHECKING_ENABLED được đặt trong NtGlobalFlag, chuỗi 0xABABABAB sẽ được nối thêm (hai lần trong 32-Bit và 4 lần trong Windows 64-Bit) ở cuối khối heap được phân bổ.
+
+Nếu cờ HEAP_FREE_CHECKING_ENABLED được đặt trong NtGlobalFlag, chuỗi 0xFEEEFEEE sẽ được thêm vào nếu cần thêm byte để lấp đầy khoảng trống cho đến khối bộ nhớ tiếp theo.
+
+Code C:
+```C
+bool Check()
+{
+    PROCESS_HEAP_ENTRY HeapEntry = { 0 };
+    do
+    {
+        if (!HeapWalk(GetProcessHeap(), &HeapEntry))
+            return false;
+    } while (HeapEntry.wFlags != PROCESS_HEAP_ENTRY_BUSY);
+
+    PVOID pOverlapped = (PBYTE)HeapEntry.lpData + HeapEntry.cbData;
+    return ((DWORD)(*(PDWORD)pOverlapped) == 0xABABABAB);
+}
+```
+
+# Cách khắc phục:
+
+Với cờ ```PEB!BeingDebugged```: Đặt cờ ```BeingDebugged``` thành 0. Điều này có thể được thực hiện bằng cách DLLINJECTION.
+
+```C 
+#ifndef _WIN64
+PPEB pPeb = (PPEB)__readfsdword(0x30);
+#else
+PPEB pPeb = (PPEB)__readgsqword(0x60);
+#endif // _WIN64
+pPeb->BeingDebugged = 0;
+```
+
+Với ```NtGlobalFlag```:  Đặt cờ ```NtGlobalFlag``` thành 0. Điều này có thể được thực hiện bằng cách DLLINJECTION.
+```C
+#ifndef _WIN64
+PPEB pPeb = (PPEB)__readfsdword(0x30);
+*(PDWORD)((PBYTE)pPeb + 0x68) = 0;
+#else
+PPEB pPeb = (PPEB)__readgsqword(0x60);
+*(PDWORD)((PBYTE)pPeb + 0xBC); = 0;
+#endif // _WIN64
+```
+
+Với cờ Heap: 
+Đặt giá trị Flags thành HEAP_GROWABLE và giá trị ForceFlags thành 0. Điều này có thể được thực hiện bằng cách DLLINJECTION.
+
+```C
+#ifndef _WIN64
+PPEB pPeb = (PPEB)__readfsdword(0x30);
+PVOID pHeapBase = !m_bIsWow64
+    ? (PVOID)(*(PDWORD_PTR)((PBYTE)pPeb + 0x18))
+    : (PVOID)(*(PDWORD_PTR)((PBYTE)pPeb + 0x1030));
+DWORD dwHeapFlagsOffset = IsWindowsVistaOrGreater()
+    ? 0x40
+    : 0x0C;
+DWORD dwHeapForceFlagsOffset = IsWindowsVistaOrGreater()
+    ? 0x44 
+    : 0x10;
+#else
+PPEB pPeb = (PPEB)__readgsqword(0x60);
+PVOID pHeapBase = (PVOID)(*(PDWORD_PTR)((PBYTE)pPeb + 0x30));
+DWORD dwHeapFlagsOffset = IsWindowsVistaOrGreater()
+    ? 0x70 
+    : 0x14;
+DWORD dwHeapForceFlagsOffset = IsWindowsVistaOrGreater()
+    ? 0x74 
+    : 0x18;
+#endif // _WIN64
+
+*(PDWORD)((PBYTE)pHeapBase + dwHeapFlagsOffset) = HEAP_GROWABLE;
+*(PDWORD)((PBYTE)pHeapBase + dwHeapForceFlagsOffset) = 0;
+```
+
+Với bảo vệ Heap:
+
+Vá lại 12 bit trong hệ thống chạy 32 bit sau heap
+       20 bit trong hệ thống chạy 64 bit sau heap
+Chuyển hướng kernel32! HeapAlloc() và vá heap
+
+
+Một VD về DebugFlag: [link](https://hutaobestgirl.wordpress.com/2022/03/07/anti-debug-one-for-all/)
 
