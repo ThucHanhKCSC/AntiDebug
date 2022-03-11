@@ -1,5 +1,8 @@
 # Process Memory
 
+![download](https://user-images.githubusercontent.com/101321172/157797737-1e3ba116-8acc-477d-9428-80b74163045a.svg)
+
+
 Một tiến trình có thể tự phát hiện debugger bằng việc kiểm tra bộ nhớ của nó
 
 # 1.Breakpoints
