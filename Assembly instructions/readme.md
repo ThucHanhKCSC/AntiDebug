@@ -1,5 +1,8 @@
 # Lệnh Assembly 
 
+![download](https://user-images.githubusercontent.com/101321172/157797540-eb4c63df-89ce-4b94-8f4b-c94fac3db17d.svg)
+
+
 Phát hiện debugger dựa trên cách debugger hành động khi CPU xử lý các câu lệnh
 
 # 1. INT 3
