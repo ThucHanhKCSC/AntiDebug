@@ -28,7 +28,7 @@ opcode của ```INT 3```: 0xcc, còn 1 dạng nữa có opcode là CD 03
 
 Khi có ```EXCEPTION_BREAKPOINT```, hệ thống sẽ giảm giá trị của thanh eip đến địa chỉ của opcode 0xcc và trao quyền kiểm soát cho exception handle. 
 
-Trong dạng khác của INT 3, eip trỏ tới phần giữa của lệnh (0x03). Do đó eip có thể bị chuyển đổi bơi ```exception handle``` nếu chúng ta muốn tiếp tục sau lệnh int 3. Nếu không chúng ta có thể bỏ qua việc sửa đổi con trỏ lệnh.
+Trong dạng khác của INT 3, eip trỏ tới phần giữa của lệnh (0x03). Do đó ```eip``` có thể bị chuyển đổi bơi ```exception handle``` nếu chúng ta muốn tiếp tục sau lệnh ```int 3```. Nếu không chúng ta có thể bỏ qua việc sửa đổi con trỏ lệnh.
 
 ```C
 bool g_bDebugged = false;
@@ -54,7 +54,7 @@ bool IsDebugged()
 ```
 
 # INT 2D
-Giống với ```INT 3```, Khi ```INT 2D``` đươc thực thi cũng gọi tới ```EXCEPTION_BREAKPOINT```, nhưng hệ thống kiểm tra thêm thanh eax (1, 3, 4 trên các phiên bản window), nếu chạy trên DBG, thì byte tiếp theo sau INT 2D có thể bị skip => lỗi crash
+Giống với ```INT 3```, Khi ```INT 2D``` đươc thực thi cũng gọi tới ```EXCEPTION_BREAKPOINT```, nhưng hệ thống kiểm tra thêm thanh ```eax``` (1, 3, 4 trên các phiên bản window), nếu chạy trên DBG, thì byte tiếp theo sau ```INT 2D``` có thể bị skip => lỗi crash
 
 ```C
 bool IsDebugged()
