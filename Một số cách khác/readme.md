@@ -1,4 +1,6 @@
 # một số cách khác
+![download](https://user-images.githubusercontent.com/101321172/157797686-d4ca3d33-4858-47ff-b0c1-ff3963f1cf7c.svg)
+
 
 # 1. FindWindow()
 
