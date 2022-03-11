@@ -4,7 +4,7 @@ Phát hiện debugger dựa trên cách debugger hành động khi CPU xử lý 
 
 # 1. INT 3
 
-```INT 3``` là mã interupt biểu thị cho ```software breakpoint```, nếu không có debugger thì sẽ gọi exception handle và tạo ```EXCEPTION_BREAKPOINT (0x80000003)```, còn nếu có debugger thì sẽ không gọi đươc exception handle
+```INT 3``` là mã interupt biểu thị cho ```software breakpoint```, nếu không có debugger thì sẽ gọi exception handle và tạo ```EXCEPTION_BREAKPOINT (0x80000003)```, còn nếu có debugger thì sẽ không gọi đươc ```exception handle```
 
 ```C
 bool IsDebugged()
@@ -25,7 +25,7 @@ opcode của ```INT 3```: 0xcc, còn 1 dạng nữa có opcode là CD 03
 
 Khi có ```EXCEPTION_BREAKPOINT```, hệ thống sẽ giảm giá trị của thanh eip đến địa chỉ của opcode 0xcc và trao quyền kiểm soát cho exception handle. 
 
-Trong dạng khác của INT 3, eip trỏ tới phần giữa của lệnh (0x03). Do đó eip có thể bị chuyển đổi bơi exception handle nếu chúng ta muốn tiếp tục sau lệnh int 3. Nếu không chúng ta có thể bỏ qua việc sửa đổi con trỏ lệnh.
+Trong dạng khác của INT 3, eip trỏ tới phần giữa của lệnh (0x03). Do đó eip có thể bị chuyển đổi bơi ```exception handle``` nếu chúng ta muốn tiếp tục sau lệnh int 3. Nếu không chúng ta có thể bỏ qua việc sửa đổi con trỏ lệnh.
 
 ```C
 bool g_bDebugged = false;
@@ -76,7 +76,7 @@ Opcode: 0xF1, có thể phát hiện chương trình có đang bị trace không
 
 Nếu ICE được thực thi, thì ```EXCEPTION_SINGLE_STEP``` (0x80000004) sẽ được tạo
 
-Tuy nhiên nếu chương trình đã bị trace từ trước, thì debugger sẽ coi exception trên như 1 exception thông thường => không có exception handle và chương trình sẽ chạy bình thường sau lênh ```ICE```
+Tuy nhiên nếu chương trình đã bị trace từ trước, thì debugger sẽ coi exception trên như 1 ```exception``` thông thường => không có ```exception handle``` và chương trình sẽ chạy bình thường sau lệnh ```ICE```
 
 ```C
 bool IsDebugged()
@@ -252,9 +252,9 @@ bool IsDebugged()
 
 Chỉ có tác dụng với 1 số debugger.
 
-Nếu chúng ta step từng dòng code trong Olly, sau khi vào byte (F3), chúng ta sẽ nhảy đến cuối khối ```try``` ngay lập tức
+Nếu chúng ta step từng dòng code trong Olly, sau khi vào byte (0xF3), chúng ta sẽ nhảy đến cuối khối ```try``` ngay lập tức
 
-Còn nếu không chạy bằng debugger nào thì chúng ta sẽ đến được exception
+Còn nếu không chạy bằng debugger nào thì chúng ta sẽ đến exception
 
 ```C
 bool IsDebugged()
@@ -276,5 +276,5 @@ bool IsDebugged()
 ```
 
 # Khắc phục
-- patch chương trình bằng lệnh nop
+- patch chương trình bằng lệnh ```nop```
 - nếu không muốn patch, có thể đặt bp trong các đoạn code theo dòng check này và chạy đến khi gặp breakpoint
