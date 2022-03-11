@@ -1,5 +1,8 @@
 # Exceptions
 
+![download](https://user-images.githubusercontent.com/101321172/157797597-e9a9b2b2-8761-4c7a-aaf3-e7908e11e4a0.svg)
+
+
 Cố tình tạo ra các exception để phát hiện tiến trình hiện tại có đang bị debug không
 
 # 1. UnhandledExceptionFilter()
