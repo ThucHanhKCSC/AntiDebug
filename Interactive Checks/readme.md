@@ -1,5 +1,8 @@
 # Trực tiếp kiểm tra tương tác
 
+![download](https://user-images.githubusercontent.com/101321172/157797648-16154e98-b4ed-421b-b858-9f4fc75e723f.svg)
+
+
 Các kĩ thuật này cho phép tiến trình quản lý giao diện người dùng hay tham gia vào tiền trình cha để phát hiện debugger
 
 # 1.Tự Debug
