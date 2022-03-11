@@ -20,7 +20,7 @@ being_debugged:
     call ExitProcess
 ```
 
-(Giải thích: hàm ```IsDebbugerPreset``` trả về giá trị khác 0 nếu tiến trình đang bị debug, nếu tiến trình đó đang được debug thì al sẽ nhận giá trị != 0 do đó hệ thống sẽ jump đến being_debugged và kết thúc chương trình)
+(Giải thích: hàm ```IsDebbugerPreset()``` trả về giá trị khác 0 nếu tiến trình đang bị debug, nếu tiến trình đó đang được debug thì al sẽ nhận giá trị != 0 do đó hệ thống sẽ jump đến ```being_debugged``` và kết thúc chương trình)
 
 Trong C:
 
@@ -283,19 +283,19 @@ bool Check()
 ```
 
 # Cách khắc phục:
-Đối với IsDebuggerPresent (): Đặt cờ BeingDebugged của Process Environment Block (PEB) thành 0
-Đối với CheckRemoteDebuggerPresent () và NtQueryInformationProcess ():
-  - Khi CheckRemoteDebuggerPresent () gọi NtQueryInformationProcess (), cách duy nhất là nối NtQueryInformationProcess () và đặt các giá trị sau trong bộ đệm trả về:
+Đối với ```IsDebuggerPresent ()```: Đặt cờ BeingDebugged của Process Environment Block (PEB) thành 0
+Đối với ```CheckRemoteDebuggerPresent ()``` và ```NtQueryInformationProcess ()```:
+  - Khi ```CheckRemoteDebuggerPresent ()``` gọi ```NtQueryInformationProcess ()```, cách duy nhất là nối ```NtQueryInformationProcess ()``` và đặt các giá trị sau trong bộ đệm trả về:
   
-      - 0 (hoặc bất kỳ giá trị nào ngoại trừ -1) trong trường hợp truy vấn ProcessDebugPort.
+      - 0 (hoặc bất kỳ giá trị nào ngoại trừ -1) trong trường hợp truy vấn ```ProcessDebugPort```.
           
-      - Giá trị khác 0 trong trường hợp truy vấn ProcessDebugFlags.
+      - Giá trị khác 0 trong trường hợp truy vấn ```ProcessDebugFlags```.
            
-       - 0 trong trường hợp truy vấn ProcessDebugObjectHandle.
-  - Cách duy nhất để giảm thiểu những kiểm tra này với các hàm RtlQueryProcessHeapInformation (), RtlQueryProcessDebugInformation () và NtQuerySystemInformation () là nối chúng và sửa đổi các giá trị trả về:
+       - 0 trong trường hợp truy vấn ```ProcessDebugObjectHandle```.
+  - Cách duy nhất để giảm thiểu những kiểm tra này với các hàm ```RtlQueryProcessHeapInformation ()```, ```RtlQueryProcessDebugInformation ()``` và ```NtQuerySystemInformation ()``` là nối chúng và sửa đổi các giá trị trả về:
  
-       - RTL_PROCESS_HEAPS :: HeapInformation :: Heaps [0] :: Gắn cờ cho HEAP_GROWABLE cho
-RtlQueryProcessHeapInformation () và RtlQueryProcessDebugInformation ().
+       - ```RTL_PROCESS_HEAPS :: HeapInformation :: Heaps [0]``` :: Gắn cờ cho ```HEAP_GROWABLE``` cho
+```RtlQueryProcessHeapInformation ()``` và ```RtlQueryProcessDebugInformation ()```.
 
        - SYSTEM_KERNEL_DEBUGGER_INFORMATION :: DebuggerEnabled thành 0 và SYSTEM_KERNEL_DEBUGGER_INFORMATION :: DebuggerNotPresent thành 1 cho hàm NtQuerySystemInformation () trong trường hợp truy vấn SystemKernelDebuggerInformation.
        
@@ -343,11 +343,11 @@ if (pPeb->BeingDebugged)
 
 Trường NtGlobalFlag của khối PEB (offset 0x68 trên 32bit và 0xBC trên 64 bit) mặc định là 0. Việc bị attach bởi 1 trình debugger thì giá trị NtGlobalFlag không thay đổi. Nhưng nếu tiến trình đó được tạo vởi Debugger thì các cờ sau sẽ được set: 
 
-- FLG_HEAP_ENABLE_TAIL_CHECK (0x10)
+- ```FLG_HEAP_ENABLE_TAIL_CHECK (0x10)```
 
-- FLG_HEAP_ENABLE_FREE_CHECK (0x20)
+- ```FLG_HEAP_ENABLE_FREE_CHECK (0x20)```
 
-- FLG_HEAP_VALIDATE_PARAMETERS (0x40)
+-``` FLG_HEAP_VALIDATE_PARAMETERS (0x40)```
 
 Sự hiện diện của trình gỡ lỗi có thể được phát hiện bằng cách kiểm tra sự kết hợp của các cờ đó.
 
