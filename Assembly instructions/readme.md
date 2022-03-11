@@ -4,7 +4,7 @@ Phát hiện debugger dựa trên cách debugger hành động khi CPU xử lý 
 
 # 1. INT 3
 
-```INT 3``` là mã interupt biểu thị cho software breakpoint, nếu không có debugger thì sẽ gọi exception handle và tạo ```EXCEPTION_BREAKPOINT (0x80000003)```, còn nếu có debugger thì sẽ không gọi đươc exception handle
+```INT 3``` là mã interupt biểu thị cho ```software breakpoint```, nếu không có debugger thì sẽ gọi exception handle và tạo ```EXCEPTION_BREAKPOINT (0x80000003)```, còn nếu có debugger thì sẽ không gọi đươc exception handle
 
 ```C
 bool IsDebugged()
