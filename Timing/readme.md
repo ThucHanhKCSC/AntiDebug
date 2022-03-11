@@ -1,4 +1,8 @@
 # Timing
+
+![download](https://user-images.githubusercontent.com/101321172/157797793-7f6bddf3-08b1-443c-afe6-65a15b86accd.svg)
+
+
 So sánh thời gian chạy hàm trong chương trình giữa việc debug, không debug thì sẽ có khác biệt lớn, ví dụ hàm ktra mật khẩu của user có 100 lệnh asm thì mất khoảng 100 mils để chạy, nhưng khi debug thì sẽ mất nhiều hơn nhiều => Kiểm tra thời gian chạy hàm/ chạy chương trình để antiDebug
 
 # 1. RDPMC/RDTSC (Read Performance Monitoring Counter/Read Time-Stamp Counter)
