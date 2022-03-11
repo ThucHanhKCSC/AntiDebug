@@ -337,14 +337,14 @@ KHi đang debug thì có thể skip các hàm nghi là check debug
 Chuyển hướng khi thấy các hàm sau:
 
 ```C
-kernel32!DebugActiveProcess()
-ntdll!DbgUiDebugActiveProcess()
-ntdll!NtDebugActiveProcess()
-kernel32!GenerateConsoleCtrlEvent()
-user32!NtUserBlockInput()
-ntdll!NtSetInformationThread()
-user32!NtUserBuildHwndList()
-kernel32!SuspendThread()
-user32!SwitchDesktop()
-kernel32!OutputDebugStringW()
+DebugActiveProcess()
+DbgUiDebugActiveProcess()
+NtDebugActiveProcess()
+GenerateConsoleCtrlEvent()
+NtUserBlockInput()
+NtSetInformationThread()
+NtUserBuildHwndList()
+SuspendThread()
+SwitchDesktop()
+OutputDebugStringW()
 ```
